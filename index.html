@@ -320,9 +320,14 @@
                                 </div>
                             </div>
                             
-                            <button onclick="showMomentDetails(${momento.numero})" class="mt-4 ${isCompleted ? 'bg-green-400 hover:bg-green-500' : momento.color + ' hover:opacity-80'} text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                            <button onclick="toggleMomentDetails(${momento.numero})" class="mt-4 ${isCompleted ? 'bg-green-400 hover:bg-green-500' : momento.color + ' hover:opacity-80'} text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all" id="btn-${momento.numero}">
                                 Ver detalles
                             </button>
+                            
+                            <div id="details-${momento.numero}" class="hidden mt-4 p-4 ${isCompleted ? 'bg-green-600 bg-opacity-20' : 'bg-gray-50'} rounded-lg border-l-4 ${isCompleted ? 'border-green-400' : 'border-blue-400'}">
+                                <h5 class="font-semibold ${isCompleted ? 'text-green-100' : 'text-gray-700'} mb-2">📝 Detalles Específicos:</h5>
+                                <p class="${isCompleted ? 'text-green-50' : 'text-gray-600'} text-sm leading-relaxed" id="detail-text-${momento.numero}"></p>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -516,16 +521,12 @@
             });
         }
 
-        function showMomentDetails(numero) {
-            const momento = momentos.find(m => m.numero === numero);
-            if (!momento) {
-                alert('Error: No se encontró el momento especificado.');
-                return;
-            }
+        function toggleMomentDetails(numero) {
+            const detailsDiv = document.getElementById(`details-${numero}`);
+            const button = document.getElementById(`btn-${numero}`);
+            const detailText = document.getElementById(`detail-text-${numero}`);
             
-            const status = momento.completado ? 
-                `✅ COMPLETADO: ${new Date(momento.fechaCompletado).toLocaleString()}` : 
-                '⏳ PENDIENTE';
+            if (!detailsDiv || !button || !detailText) return;
             
             const detallesEspecificos = {
                 0: "Lía (IA) en este punto debería realizar una llamada de perfilación con el fin de tener la mayor cantidad de datos posible sobre nuestro cliente y asignar un score al lead.",
@@ -547,18 +548,16 @@
                 8: "Campaña de remarketing final para redireccionar al cliente hacia nuevos proyectos que puedan ser de su interés actual."
             };
             
-            const detalleEspecifico = detallesEspecificos[numero] || 'No hay detalles específicos disponibles.';
-                
-            const mensaje = `MOMENTO ${numero} - DETALLES COMPLETOS\n\n` +
-                  `📊 ESTADO: ${status}\n\n` +
-                  `👤 RESPONSABLE: ${momento.quien}\n\n` +
-                  `📋 ACCIÓN: ${momento.que}\n\n` +
-                  `⏰ TIMING: ${momento.cuando}\n\n` +
-                  `📞 MÉTODO: ${momento.como}\n\n` +
-                  `💼 CRM: ${momento.crm}\n\n` +
-                  `📝 DETALLES ESPECÍFICOS:\n${detalleEspecifico}`;
-            
-            alert(mensaje);
+            if (detailsDiv.classList.contains('hidden')) {
+                // Mostrar detalles
+                detailText.textContent = detallesEspecificos[numero] || 'No hay detalles específicos disponibles.';
+                detailsDiv.classList.remove('hidden');
+                button.textContent = 'Ocultar detalles';
+            } else {
+                // Ocultar detalles
+                detailsDiv.classList.add('hidden');
+                button.textContent = 'Ver detalles';
+            }
         }
 
         // Inicializar la aplicación
@@ -587,5 +586,5 @@
             });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9802582a03cf6da7',t:'MTc1ODA0NjQ3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98026ad9d4652878',t:'MTc1ODA0NzI0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
