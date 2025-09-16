@@ -1,0 +1,592 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Línea de Tiempo - Contacto con Cliente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .timeline-line {
+            background: linear-gradient(to bottom, #3b82f6, #8b5cf6, #ec4899);
+        }
+        
+        .moment-card {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .moment-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .moment-active {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .timeline-dot {
+            transition: all 0.3s ease;
+        }
+        
+        .timeline-dot:hover {
+            transform: scale(1.2);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .completed {
+            opacity: 0.7;
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        
+        .next-due {
+            border: 3px solid #f59e0b;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+        }
+        
+        .countdown {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="gradient-bg text-white py-8">
+        <div class="container mx-auto px-4">
+            <h1 class="text-4xl font-bold text-center mb-4">Línea de Tiempo de Contacto</h1>
+            <p class="text-xl text-center opacity-90">Proceso de seguimiento y conversión de leads</p>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-12">
+        <div class="relative max-w-6xl mx-auto">
+            <!-- Línea principal -->
+            <div class="absolute left-1/2 transform -translate-x-1/2 w-1 timeline-line h-full rounded-full"></div>
+            
+            <!-- Momentos -->
+            <div id="timeline" class="space-y-16">
+                <!-- Los momentos se generarán dinámicamente -->
+            </div>
+        </div>
+        
+        <!-- Controles -->
+        <div class="flex justify-center mt-12 space-x-4 flex-wrap gap-4">
+            <button onclick="playTimeline()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                ▶️ Reproducir Timeline
+            </button>
+            <button onclick="resetProgress()" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                🔄 Reiniciar Progreso
+            </button>
+            <button onclick="startProcess()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                🚀 Iniciar Proceso
+            </button>
+        </div>
+        
+        <!-- Panel de estado -->
+        <div class="max-w-4xl mx-auto mt-8 bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Estado del Proceso</h3>
+            <div id="process-status" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <div class="text-2xl font-bold text-gray-600" id="completed-count">0</div>
+                    <div class="text-sm text-gray-500">Completados</div>
+                </div>
+                <div class="text-center p-4 bg-orange-50 rounded-lg">
+                    <div class="text-2xl font-bold text-orange-600" id="pending-count">0</div>
+                    <div class="text-sm text-gray-500">Pendientes</div>
+                </div>
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600" id="next-action">-</div>
+                    <div class="text-sm text-gray-500">Próxima Acción</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const momentos = [
+            {
+                numero: 0,
+                quien: "Lía (IA)",
+                que: "Se contacta con el cliente y realiza llamada de perfilación o envía mensaje automatizado con información básica",
+                cuando: "Inmediato apenas el cliente se registre",
+                como: "Llamada o mensaje automático por WhatsApp",
+                crm: "Lía debería crear un seguimiento con cierre automático confirmando la gestión",
+                color: "bg-purple-500",
+                icon: "🤖",
+                tiempoEspera: 0, // minutos
+                completado: false,
+                fechaCompletado: null
+            },
+            {
+                numero: 1,
+                quien: "Asesor de sala",
+                que: "Se contacta con el cliente y realiza llamada",
+                cuando: "Máximo 24 horas posteriores al registro del lead",
+                como: "Llamada telefónica",
+                crm: "Si contesta: convertir según información brindada. Si no contesta: enviar mensaje individual por WhatsApp solicitando confirmación de horario para reintentar llamada y pasar a 'seguimiento 1'",
+                color: "bg-blue-500",
+                icon: "👨‍💼",
+                tiempoEspera: 1440, // 24 horas en minutos
+                completado: false,
+                fechaCompletado: null
+            },
+            {
+                numero: 2,
+                quien: "Asesor de sala",
+                que: "Contacto telefónico con el cliente",
+                cuando: "24 horas posteriores a la acción del momento 1",
+                como: "Llamada telefónica",
+                crm: "Si contesta: convertir según información brindada. Si no contesta: enviar correo (campaña de conocimiento/valor) y mantener estado 'seguimiento 1'",
+                color: "bg-blue-500",
+                icon: "📞",
+                tiempoEspera: 1440, // 24 horas
+                completado: false,
+                fechaCompletado: null
+            },
+            {
+                numero: 3,
+                quien: "Asesor de sala",
+                que: "Contacto mensaje con el cliente",
+                cuando: "24 horas posteriores a la acción del momento 2",
+                como: "Por WhatsApp individual",
+                crm: "Si contesta: convertir según información brindada. Si no contesta: pasar el lead a 'seguimiento 2'",
+                color: "bg-blue-500",
+                icon: "💬",
+                tiempoEspera: 1440, // 24 horas
+                completado: false,
+                fechaCompletado: null
+            },
+            {
+                numero: 4,
+                quien: "Coordinador de sala/Asesor sala",
+                que: "Mensaje WhatsApp",
+                cuando: "7 días posterior al registro inicial del lead",
+                como: "Campaña masiva Sinco (activar lead con algo valioso, beneficios del proyecto)",
+                crm: "Si contesta: convertir según información brindada. Si no contesta: mantener el lead en 'seguimiento 2'",
+                color: "bg-green-500",
+                icon: "👨‍💻",
+                tiempoEspera: 10080, // 7 días desde registro inicial
+                completado: false,
+                fechaCompletado: null
+            },
+            {
+                numero: 5,
+                quien: "SAC",
+                que: "Contactar al cliente invitando a sala",
+                cuando: "Día 9 posterior al registro inicial del lead",
+                como: "Llamada telefónica y SMS (con mensaje invitando a visitar la sala de ventas)",
+                crm: "Se debe pasar a lead 'seguimiento 3'",
+                color: "bg-orange-500",
+                icon: "🏪",
+                tiempoEspera: 12960, // 9 días desde registro inicial
+                completado: false,
+                fechaCompletado: null
+            },
+            {
+                numero: 6,
+                quien: "Coordinador/Asesor sala",
+                que: "Mensaje WhatsApp",
+                cuando: "Día 15 posterior al registro inicial del lead",
+                como: "Campaña masiva Sinco (Activar lead/valor)",
+                crm: "Si contesta: asesor debe convertir según información brindada. Si no contesta: mantener el lead en 'seguimiento 3'",
+                color: "bg-indigo-500",
+                icon: "📅",
+                tiempoEspera: 21600, // 15 días desde registro inicial
+                completado: false,
+                fechaCompletado: null
+            },
+            {
+                numero: 7,
+                quien: "Lía (IA)",
+                que: "Llamada",
+                cuando: "Día 21 posterior al registro inicial del lead",
+                como: "Llamada de LIA (Pregunta motivo de indecisión y agenda cita automatizada a asesor de sala inicial/si confirma que ya no está interesado ofrecer otros proyectos)",
+                crm: "Si cliente confirma cita: Lía crea cita en calendario de asesor y mantiene 'seguimiento 3'. Si ya no le interesa: crear seguimiento cerrando visita y creando lead nuevo en proyecto de interés actual",
+                color: "bg-pink-500",
+                icon: "🤖",
+                tiempoEspera: 30240, // 21 días desde registro inicial
+                completado: false,
+                fechaCompletado: null
+            },
+            {
+                numero: 8,
+                quien: "Marketing",
+                que: "Campaña remarketing",
+                cuando: "Día 30 posterior al registro inicial del lead que se encuentra en 'seguimiento 3'",
+                como: "Envío de campaña masiva de remarketing con la oferta general de los proyectos",
+                crm: "Dejar seguimiento correspondiente y redireccionar a nuevo proyecto que es de interés del cliente",
+                color: "bg-red-500",
+                icon: "📈",
+                tiempoEspera: 43200, // 30 días desde registro inicial
+                completado: false,
+                fechaCompletado: null
+            }
+        ];
+
+        let procesoIniciado = false;
+        let fechaRegistro = null;
+        let intervalos = [];
+
+        function createTimelineHTML() {
+            const timeline = document.getElementById('timeline');
+            timeline.innerHTML = '';
+
+            momentos.forEach((momento, index) => {
+                const isLeft = index % 2 === 0;
+                const isCompleted = momento.completado;
+                const isNextDue = getNextMoment() === momento.numero;
+                
+                let statusHTML = '';
+                let countdownHTML = '';
+                
+                if (procesoIniciado) {
+                    if (isCompleted) {
+                        statusHTML = `<div class="flex items-center text-green-600 text-sm font-semibold mb-2">
+                            ✅ Completado: ${new Date(momento.fechaCompletado).toLocaleString()}
+                        </div>`;
+                    } else {
+                        // Mostrar temporizador para todos los momentos pendientes que pueden calcularse
+                        const tiempoRestante = getTiempoRestante(momento.numero);
+                        if (tiempoRestante) {
+                            const isOverdue = tiempoRestante === "¡Acción requerida ahora!";
+                            countdownHTML = `<div class="countdown mb-3 ${isOverdue ? 'bg-red-500' : ''}">⏰ ${tiempoRestante}</div>`;
+                        }
+                    }
+                }
+                
+                const momentoHTML = `
+                    <div class="relative flex items-center ${isLeft ? 'justify-start' : 'justify-end'}">
+                        <!-- Punto en la línea -->
+                        <div class="absolute left-1/2 transform -translate-x-1/2 w-6 h-6 ${isCompleted ? 'bg-green-500' : momento.color} rounded-full border-4 border-white shadow-lg timeline-dot z-10 flex items-center justify-center text-white text-xs font-bold">
+                            ${isCompleted ? '✓' : momento.numero}
+                        </div>
+                        
+                        <!-- Tarjeta del momento -->
+                        <div class="moment-card w-5/12 ${isLeft ? 'mr-auto pr-8' : 'ml-auto pl-8'} ${isCompleted ? 'completed' : 'bg-white'} ${isNextDue ? 'next-due' : ''} rounded-xl shadow-lg p-6 border border-gray-100" id="moment-${momento.numero}">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="text-2xl mr-3">${momento.icon}</span>
+                                    <div>
+                                        <h3 class="text-xl font-bold ${isCompleted ? 'text-white' : 'text-gray-800'}">Momento ${momento.numero}</h3>
+                                        <p class="text-sm font-semibold ${isCompleted ? 'text-green-100' : momento.color.replace('bg-', 'text-')} opacity-80">${momento.quien}</p>
+                                    </div>
+                                </div>
+                                ${procesoIniciado && !isCompleted && canComplete(momento.numero) ? `
+                                    <button onclick="completeMoment(${momento.numero})" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-semibold transition-all">
+                                        ✓ Completar
+                                    </button>
+                                ` : ''}
+                            </div>
+                            
+                            ${statusHTML}
+                            ${countdownHTML}
+                            
+                            <div class="space-y-3">
+                                <div>
+                                    <h4 class="font-semibold ${isCompleted ? 'text-green-100' : 'text-gray-700'} mb-1">¿Qué?</h4>
+                                    <p class="${isCompleted ? 'text-green-50' : 'text-gray-600'} text-sm">${momento.que}</p>
+                                </div>
+                                
+                                <div>
+                                    <h4 class="font-semibold ${isCompleted ? 'text-green-100' : 'text-gray-700'} mb-1">¿Cuándo?</h4>
+                                    <p class="${isCompleted ? 'text-green-50' : 'text-gray-600'} text-sm">${momento.cuando}</p>
+                                </div>
+                                
+                                <div>
+                                    <h4 class="font-semibold ${isCompleted ? 'text-green-100' : 'text-gray-700'} mb-1">¿Cómo?</h4>
+                                    <p class="${isCompleted ? 'text-green-50' : 'text-gray-600'} text-sm">${momento.como}</p>
+                                </div>
+                                
+                                <div>
+                                    <h4 class="font-semibold ${isCompleted ? 'text-green-100' : 'text-gray-700'} mb-1">CRM</h4>
+                                    <p class="${isCompleted ? 'text-green-50' : 'text-gray-600'} text-sm">${momento.crm}</p>
+                                </div>
+                            </div>
+                            
+                            <button onclick="showMomentDetails(${momento.numero})" class="mt-4 ${isCompleted ? 'bg-green-400 hover:bg-green-500' : momento.color + ' hover:opacity-80'} text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                                Ver detalles
+                            </button>
+                        </div>
+                    </div>
+                `;
+                timeline.innerHTML += momentoHTML;
+            });
+        }
+
+        function startProcess() {
+            if (procesoIniciado) {
+                alert('El proceso ya está iniciado. Use "Reiniciar Progreso" para comenzar de nuevo.');
+                return;
+            }
+            
+            procesoIniciado = true;
+            fechaRegistro = new Date();
+            
+            // Marcar momento 0 como completado automáticamente
+            momentos[0].completado = true;
+            momentos[0].fechaCompletado = fechaRegistro;
+            
+            updateStatus();
+            createTimelineHTML();
+            startCountdowns();
+            
+            alert('¡Proceso iniciado! El Momento 0 (Lía IA) se ha completado automáticamente.');
+        }
+
+        function completeMoment(numero) {
+            if (!procesoIniciado) return;
+            
+            const momento = momentos[numero];
+            if (momento.completado) return;
+            
+            momento.completado = true;
+            momento.fechaCompletado = new Date();
+            
+            updateStatus();
+            createTimelineHTML();
+            
+            const nextMoment = getNextMoment();
+            if (nextMoment !== null) {
+                alert(`¡Momento ${numero} completado! Próximo: Momento ${nextMoment}`);
+            } else {
+                alert('¡Proceso completado! Todos los momentos han sido ejecutados.');
+            }
+        }
+
+        function getNextMoment() {
+            if (!procesoIniciado) return null;
+            
+            for (let i = 0; i < momentos.length; i++) {
+                if (!momentos[i].completado) {
+                    return momentos[i].numero;
+                }
+            }
+            return null;
+        }
+
+        function canComplete(numero) {
+            if (!procesoIniciado) return false;
+            
+            // Momento 0 se completa automáticamente
+            if (numero === 0) return false;
+            
+            // Solo se puede completar el siguiente momento en secuencia
+            const nextMoment = getNextMoment();
+            return nextMoment === numero;
+        }
+
+        function getTiempoRestante(numero) {
+            if (!procesoIniciado) return null;
+            
+            const momento = momentos[numero];
+            if (momento.completado) return null;
+            
+            // El momento 0 es el registro del lead, no necesita temporizador
+            if (numero === 0) return null;
+            
+            let fechaBase;
+            let fechaObjetivo;
+            
+            // Para momentos 4, 5, 6, 7, 8 calculamos desde el registro inicial (momento 0)
+            if (numero >= 4) {
+                fechaBase = fechaRegistro;
+                fechaObjetivo = new Date(fechaBase.getTime() + (momento.tiempoEspera * 60 * 1000));
+            } else {
+                // Para momentos 1, 2, 3 calculamos desde el momento anterior
+                const momentoAnterior = momentos[numero - 1];
+                if (!momentoAnterior.completado) return null;
+                fechaBase = new Date(momentoAnterior.fechaCompletado);
+                fechaObjetivo = new Date(fechaBase.getTime() + (momento.tiempoEspera * 60 * 1000));
+            }
+            
+            const ahora = new Date();
+            const tiempoRestante = Math.floor((fechaObjetivo - ahora) / (1000 * 60)); // en minutos
+            
+            if (tiempoRestante <= 0) {
+                return "¡Acción requerida ahora!";
+            }
+            
+            const horas = Math.floor(tiempoRestante / 60);
+            const minutos = tiempoRestante % 60;
+            
+            if (horas > 24) {
+                const dias = Math.floor(horas / 24);
+                const horasRestantes = horas % 24;
+                return `${dias}d ${horasRestantes}h ${minutos}m restantes`;
+            } else if (horas > 0) {
+                return `${horas}h ${minutos}m restantes`;
+            } else {
+                return `${minutos}m restantes`;
+            }
+        }
+
+        function updateStatus() {
+            const completedCount = momentos.filter(m => m.completado).length;
+            const pendingCount = momentos.length - completedCount;
+            const nextAction = getNextMoment();
+            
+            document.getElementById('completed-count').textContent = completedCount;
+            document.getElementById('pending-count').textContent = pendingCount;
+            document.getElementById('next-action').textContent = nextAction !== null ? `Momento ${nextAction}` : 'Completado';
+        }
+
+        function startCountdowns() {
+            // Limpiar intervalos existentes
+            intervalos.forEach(interval => clearInterval(interval));
+            intervalos = [];
+            
+            // Crear nuevo intervalo para actualizar contadores cada segundo
+            const interval = setInterval(() => {
+                if (procesoIniciado) {
+                    updateCountdowns();
+                }
+            }, 1000); // Actualizar cada segundo
+            
+            intervalos.push(interval);
+        }
+
+        function updateCountdowns() {
+            // Actualizar solo los contadores sin recrear toda la timeline
+            momentos.forEach(momento => {
+                if (!momento.completado && procesoIniciado) {
+                    const tiempoRestante = getTiempoRestante(momento.numero);
+                    const countdownElement = document.querySelector(`#moment-${momento.numero} .countdown`);
+                    
+                    if (countdownElement && tiempoRestante) {
+                        countdownElement.textContent = `⏰ ${tiempoRestante}`;
+                    }
+                }
+            });
+        }
+
+        function resetProgress() {
+            procesoIniciado = false;
+            fechaRegistro = null;
+            
+            // Limpiar intervalos
+            intervalos.forEach(interval => clearInterval(interval));
+            intervalos = [];
+            
+            // Resetear todos los momentos
+            momentos.forEach(momento => {
+                momento.completado = false;
+                momento.fechaCompletado = null;
+            });
+            
+            updateStatus();
+            createTimelineHTML();
+            
+            alert('Progreso reiniciado. Puede iniciar un nuevo proceso.');
+        }
+
+        function playTimeline() {
+            resetTimeline();
+            momentos.forEach((momento, index) => {
+                setTimeout(() => {
+                    const card = document.getElementById(`moment-${momento.numero}`);
+                    card.classList.add('moment-active');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, index * 1000);
+            });
+        }
+
+        function resetTimeline() {
+            momentos.forEach(momento => {
+                const card = document.getElementById(`moment-${momento.numero}`);
+                if (card) {
+                    card.classList.remove('moment-active');
+                }
+            });
+        }
+
+        function showMomentDetails(numero) {
+            const momento = momentos.find(m => m.numero === numero);
+            if (!momento) {
+                alert('Error: No se encontró el momento especificado.');
+                return;
+            }
+            
+            const status = momento.completado ? 
+                `✅ COMPLETADO: ${new Date(momento.fechaCompletado).toLocaleString()}` : 
+                '⏳ PENDIENTE';
+            
+            const detallesEspecificos = {
+                0: "Lía (IA) en este punto debería realizar una llamada de perfilación con el fin de tener la mayor cantidad de datos posible sobre nuestro cliente y asignar un score al lead.",
+                
+                1: "La llamada se debe realizar con el fin de convertir nuestro lead a oportunidad brindando una cotización y una perfilación más de tipo financiera para cerrar la venta. El mensaje que se enviaría por medio de WhatsApp de Sinco debe ser individual con un mensaje (una plantilla) en el cual expresemos que estuvimos intentando el contacto telefónico y que al no ser posible queremos agendar una llamada. Es importante que no se envíe la información general del proyecto en este punto ya que perdemos oportunidad de conversión (el cliente ya tendría toda la información y recuperar la atención del cliente se vuelve difícil).",
+                
+                2: "La llamada se debe realizar con el fin de convertir nuestro lead a oportunidad brindando una cotización y una perfilación más de tipo financiera para cerrar la venta. El correo que se envíe debe coincidir con una fase de conocimiento, debe estar muy estructurado (pídele a la gema que creamos que te ayude con eso) y muy importante no debe ser la información completa sobre el proyecto sino más bien información muy valiosa para el cliente que lo anime a retomar contacto para profundizar sobre ese beneficio que estás mostrando.",
+                
+                3: "¿El cliente no se animó a retomar conversación con la propuesta de valor del correo? En el mensaje individual que vas a enviar por WhatsApp debes buscar construir confianza, no insistir en la venta. La comunicación en esta etapa debe ser educativa y útil, posicionándonos como una fuente de conocimiento confiable.",
+                
+                4: "Una campaña masiva debe ser corta y atractiva para captar la atención de leads que, a estas alturas, son considerados fríos y para reactivar un lead frío intenta mostrarle algo que no sepa, algo que no haya visto o algo que le genere curiosidad sin pedirle nada a cambio. En lugar de insistir con los datos básicos del proyecto, la idea es revelar un 'beneficio oculto' o un detalle único que lo motive a interactuar.",
+                
+                5: "La clave es ser directo y conciso, sin abrumar con información, para lograr que la persona visite la sala de ventas. Un mensaje breve y que apele a la sencillez del próximo paso. Ej: ¡Hola, [Nombre del Cliente]! Queremos mostrarte algo increíble. Visita nuestra sala de ventas en Casablanca Gardens y descubre en persona tu próximo hogar. Te esperamos en la Cra 80 #145-75.",
+                
+                6: "Los testimonios activan la prueba social y el sentido de pertenencia, que son poderosos motivadores para el cerebro reptiliano. Al mostrarle a los clientes de lo que 'se están perdiendo', no solo generas un sentido de escasez y urgencia, sino que también validas tu servicio con la experiencia de otras personas. Esto es fundamental para construir confianza, ya que el 88% de los consumidores confía en las reseñas en línea tanto como en las recomendaciones de amigos. Ejemplo: '¡Más de 100 familias ya eligieron su hogar en el norte de Bogotá! 🏡 Conoce por qué Casablanca Gardens es la opción preferida por quienes buscan un lugar seguro para invertir y vivir.'",
+                
+                7: "La llamada debe ser corta y directa. El objetivo no es cerrar la venta, sino entender la razón de la indecisión o re-engancharlo en otros proyectos si es necesario.",
+                
+                8: "Campaña de remarketing final para redireccionar al cliente hacia nuevos proyectos que puedan ser de su interés actual."
+            };
+            
+            const detalleEspecifico = detallesEspecificos[numero] || 'No hay detalles específicos disponibles.';
+                
+            const mensaje = `MOMENTO ${numero} - DETALLES COMPLETOS\n\n` +
+                  `📊 ESTADO: ${status}\n\n` +
+                  `👤 RESPONSABLE: ${momento.quien}\n\n` +
+                  `📋 ACCIÓN: ${momento.que}\n\n` +
+                  `⏰ TIMING: ${momento.cuando}\n\n` +
+                  `📞 MÉTODO: ${momento.como}\n\n` +
+                  `💼 CRM: ${momento.crm}\n\n` +
+                  `📝 DETALLES ESPECÍFICOS:\n${detalleEspecifico}`;
+            
+            alert(mensaje);
+        }
+
+        // Inicializar la aplicación
+        function init() {
+            updateStatus();
+            createTimelineHTML();
+        }
+
+        // Inicializar al cargar la página
+        init();
+
+        // Agregar interactividad al scroll
+        window.addEventListener('scroll', () => {
+            const cards = document.querySelectorAll('.moment-card');
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+                
+                if (isVisible) {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                } else {
+                    card.style.opacity = '0.7';
+                    card.style.transform = 'translateY(20px)';
+                }
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9802582a03cf6da7',t:'MTc1ODA0NjQ3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
